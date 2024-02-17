@@ -1,4 +1,4 @@
-﻿namespace IMS_BE.Models
+﻿namespace IMS.Domain.Entities
 {
     public class Purchase
     {

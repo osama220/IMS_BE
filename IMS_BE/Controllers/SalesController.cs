@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using IMS_BE.Models;
-using IMS_BE.DataAccess;
+using IMS.Domain.Entities;
+using IMS.DataAccess;
 
 namespace IMS_BE.Controllers
 {
@@ -8,9 +8,9 @@ namespace IMS_BE.Controllers
     [Route("api/[controller]")]
     public class SalesController : ControllerBase
     {
-        private readonly InventoryDbContext _context;
+        private readonly ApplicationDBContext _context;
 
-        public SalesController(InventoryDbContext context)
+        public SalesController(ApplicationDBContext context)
         {
             _context = context;
         }

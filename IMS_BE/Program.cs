@@ -1,38 +1,59 @@
-using IMS_BE.DataAccess;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using IMS_BE.Extensions;
+using IMS.DataAccess;
+using IMS.Application;
 
 var builder = WebApplication.CreateBuilder(args);
+SetupServices(builder);
+SetupAppPipeline(builder);
 
-// Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<InventoryDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddControllers();
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+static void SetupServices(WebApplicationBuilder builder)
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    // Add services to the container.
+    var services = builder.Services;
+    services.AddHttpContextAccessor();
+    services.AddControllers();
+    services.AddDbContext<ApplicationDBContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));    
+    services.AddSignalR();
+    //services.AddApplication();
+    services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+    services.AddSwaggerExtension(builder.Configuration);
+    services.AddApiVersioningExtension();
+    services.AddHealthChecks();
+    services.AddCors();
+    services.AddResponseCaching();
 }
 
-app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
-void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+// <summary>
+// Setup App Pipeline for the Web Application Builder
+// </summary>
+static void SetupAppPipeline(WebApplicationBuilder builder)
 {
-    // Configure middleware, routing, etc.
+    var app = builder.Build();
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error");
+    }
+    app.UseCors(options => options
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .SetIsOriginAllowed(origin => true) // allow any origin
+                .AllowAnyOrigin());
+    app.UseHttpsRedirection();
+    // Use the response caching
+    app.UseResponseCaching();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.UseSwaggerExtension();
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+    });
+    app.Run();
 }
